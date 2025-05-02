@@ -1,0 +1,11 @@
+numpy
+sklearn.preprocessing
+keras==3.5.0
+keras.utils
+tensorflow
+xgboost
+imbalanced-learn
+seaborn
+uvicorn
+fastapi
+pydantic
