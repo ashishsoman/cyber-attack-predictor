@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import keras
 from keras import models, layers
 
-from utils import weighted_bce, months, industries, countries, industry_risk, country_risk, recent_attacks_dict, geopolitical_tension_dict
+from utils import weighted_bce, populate_data_row
 
 # ----------------------------
 # 1. Generate Synthetic Data
@@ -23,44 +23,14 @@ np.random.seed(42)
 
 data = []
 
-for month in range(1, len(months) + 1):
-    for industry in industries:
-        for country in countries:
-            cybersecurity_posture = np.random.uniform(0, 1)
-            threat_intelligence = np.random.uniform(0, 1)
-            sector_vulnerability_index = np.random.uniform(0,1)
-            is_high_risk_country = 1 if country in country_risk else 0
-            industry_score = industry_risk.get(industry, 0.5)
-            # Base risk influenced by country and industry
-            base_risk = 0.2 + 0.1 * is_high_risk_country  + 0.1 * industry_score - 0.1 * cybersecurity_posture - 0.1 * threat_intelligence
+records = 10000
 
-            recent_attacks = recent_attacks_dict.get(industry, 2) # Randomized lag feature
-            geopolitical_tension = geopolitical_tension_dict.get(country, 2)  # External feature
-            season = (month % 12) / 12.0  # Encoded seasonal feature
-            month_sin = np.sin(2 * np.pi * month / 12)
-            month_cos = np.cos(2 * np.pi * month / 12)
-            # cybersecurity of particular industry for a specific country
-            
-
-            # Target: 1 if risk + noise > threshold
-            risk_score = base_risk + 0.05 * recent_attacks + 0.1 * geopolitical_tension + np.random.normal(0, 0.1)
-            label = int(risk_score > 0.5)
-
-            data.append({
-                'month':month,
-                'month_cos':month_cos,
-                'industry': industry,
-                'country': country,
-                'recent_attacks': recent_attacks,
-                'geopolitical_tension': geopolitical_tension,
-                'cybersecurity_posture': cybersecurity_posture,
-                'season': season,
-                'label': label
-            })
+for i in range(records):
+    data.append(populate_data_row())
 
 df = pd.DataFrame(data)
 
-print(recent_attacks)
+print(df.info())
 
 # ----------------------------
 # 2. Preprocessing
@@ -72,7 +42,7 @@ le_country = LabelEncoder()
 df['industry_enc'] = le_industry.fit_transform(df['industry'])
 df['country_enc'] = le_country.fit_transform(df['country'])
 
-features = ['industry_enc', 'country_enc','recent_attacks','geopolitical_tension','cybersecurity_posture']
+features = ['industry_enc', 'country_enc','recent_attacks','geopolitical_tension','cybersecurity_posture','threat_intelligence']
 X = df[features].values
 y = df['label'].values
 
@@ -153,13 +123,13 @@ cm = confusion_matrix(y_test, y_final_pred)
 
 print(cm)
 
-'''
+
 sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=['No Attack', 'Attack'], yticklabels=['No Attack', 'Attack'])
 plt.xlabel('Predicted')
 plt.ylabel('Actual')
 plt.title(f'Confusion Matrix (Threshold = {best_thresh:.2f})')
 plt.show()
- '''
+
 print("\nClassification Report:")
 print(classification_report(y_test, y_final_pred))
 
@@ -167,7 +137,7 @@ print("F1 Score:", f1_score(y_test, y_final_pred))
 
 # Single input sample with 4 features
 # 'industry_enc', 'country_enc','recent_attacks','geopolitical_tension','cybersecurity_posture'
-X_input = np.array([['0', '0','5','0.8','0.2']], dtype=np.float32)  # shape = (1, 4)
+X_input = np.array([['0', '0','5','0.8','0.2','0.2']], dtype=np.float32)  # shape = (1, 4)
 
 print(model.predict(X_input))
 

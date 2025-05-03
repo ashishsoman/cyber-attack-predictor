@@ -20,6 +20,7 @@ class PredictionInput(BaseModel):
     industry: str
     country: str
     cybersecurity: str
+    threatIntelligence: str
 
 @app.post("/predict")
 def predict(data: PredictionInput):
